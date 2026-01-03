@@ -8,6 +8,7 @@ const employeeRoutes = require('./routes/employee');
 const attendanceRoutes = require('./routes/attendance');
 const leaveRoutes = require('./routes/leave');
 const payrollRoutes = require('./routes/payroll');
+const User = require('./models/User');
 
 const app = express();
 
@@ -15,9 +16,33 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
+// Create default admin if not exists
+const createDefaultAdmin = async () => {
+  try {
+    const adminExists = await User.findOne({ role: 'admin' });
+    if (!adminExists) {
+      const admin = new User({
+        employeeId: 'EMP-ADMIN-001',
+        firstName: 'Admin',
+        lastName: 'User',
+        email: 'admin@dayflow.com',
+        password: 'admin123',
+        role: 'admin'
+      });
+      await admin.save();
+      console.log('Default Admin Created: admin@dayflow.com / admin123');
+    }
+  } catch (error) {
+    console.log('Admin setup error:', error.message);
+  }
+};
+
 // MongoDB Connection
 mongoose.connect(process.env.MONGODB_URI || 'mongodb://localhost:27017/dayflow-hrms')
-  .then(() => console.log('MongoDB Connected'))
+  .then(() => {
+    console.log('MongoDB Connected');
+    createDefaultAdmin();
+  })
   .catch(err => console.log('MongoDB Error:', err));
 
 // Routes

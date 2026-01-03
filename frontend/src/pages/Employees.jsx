@@ -5,7 +5,7 @@ import { FiUser, FiPlus, FiEdit2, FiTrash2 } from 'react-icons/fi';
 import { toast } from 'react-toastify';
 
 const Employees = () => {
-  const { isAdmin } = useAuth();
+  const { isAdmin, user } = useAuth();
   const [employees, setEmployees] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
@@ -142,18 +142,23 @@ const Employees = () => {
                   </td>
                   <td style={{ padding: '12px 16px', fontSize: '13px', color: '#374151' }}>{emp.department || '-'}</td>
                   <td style={{ padding: '12px 16px', textAlign: 'center' }}>
-                    <button
-                      onClick={() => { setSelectedEmployee(emp); setShowModal(true); }}
-                      style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#6b7280', marginRight: '8px' }}
-                    >
-                      <FiEdit2 size={16} />
-                    </button>
-                    <button
-                      onClick={() => handleDelete(emp._id)}
-                      style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#dc2626' }}
-                    >
-                      <FiTrash2 size={16} />
-                    </button>
+                    {/* HR cannot edit/delete Admin users */}
+                    {!(user?.role === 'hr' && emp.role === 'admin') && (
+                      <>
+                        <button
+                          onClick={() => { setSelectedEmployee(emp); setShowModal(true); }}
+                          style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#6b7280', marginRight: '8px' }}
+                        >
+                          <FiEdit2 size={16} />
+                        </button>
+                        <button
+                          onClick={() => handleDelete(emp._id)}
+                          style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#dc2626' }}
+                        >
+                          <FiTrash2 size={16} />
+                        </button>
+                      </>
+                    )}
                   </td>
                 </tr>
               ))
@@ -168,6 +173,7 @@ const Employees = () => {
           employee={selectedEmployee}
           onClose={() => setShowModal(false)}
           onSave={() => { setShowModal(false); loadEmployees(); }}
+          currentUserRole={user?.role}
         />
       )}
     </div>
@@ -175,7 +181,7 @@ const Employees = () => {
 };
 
 // Employee Modal Component
-const EmployeeModal = ({ employee, onClose, onSave }) => {
+const EmployeeModal = ({ employee, onClose, onSave, currentUserRole }) => {
   const [formData, setFormData] = useState({
     employeeId: employee?.employeeId || `EMP-${new Date().getFullYear()}${String(new Date().getMonth() + 1).padStart(2, '0')}-${String(Math.floor(Math.random() * 999) + 1).padStart(3, '0')}`,
     firstName: employee?.firstName || '',
@@ -310,7 +316,7 @@ const EmployeeModal = ({ employee, onClose, onSave }) => {
               >
                 <option value="employee">Employee</option>
                 <option value="hr">HR Officer</option>
-                <option value="admin">Admin</option>
+                {currentUserRole === 'admin' && <option value="admin">Admin</option>}
               </select>
             </div>
             <div>

@@ -52,8 +52,13 @@ export const AuthProvider = ({ children }) => {
     return user?.role === 'admin' || user?.role === 'hr';
   };
 
+  const setUserAndToken = (userData, token) => {
+    localStorage.setItem('token', token);
+    setUser(userData);
+  };
+
   return (
-    <AuthContext.Provider value={{ user, loading, login, signup, logout, isAdmin, loadUser }}>
+    <AuthContext.Provider value={{ user, loading, login, signup, logout, isAdmin, loadUser, setUserAndToken }}>
       {children}
     </AuthContext.Provider>
   );

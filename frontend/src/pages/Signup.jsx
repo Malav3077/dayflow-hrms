@@ -1,7 +1,10 @@
 import { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import { authAPI } from '../services/api';
 import { toast } from 'react-toastify';
+
+const GOOGLE_CLIENT_ID = '814840604697-ucq1668bo46lens8cpmhdkn66jfkg318.apps.googleusercontent.com';
 
 const Signup = () => {
   const [formData, setFormData] = useState({
@@ -14,7 +17,7 @@ const Signup = () => {
     role: 'employee',
   });
   const [loading, setLoading] = useState(false);
-  const { signup } = useAuth();
+  const { signup, setUserAndToken } = useAuth();
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -23,7 +26,45 @@ const Signup = () => {
     const month = String(now.getMonth() + 1).padStart(2, '0');
     const random = String(Math.floor(Math.random() * 999) + 1).padStart(3, '0');
     setFormData(prev => ({ ...prev, employeeId: `EMP-${year}${month}-${random}` }));
+
+    // Load Google Sign-In script
+    const script = document.createElement('script');
+    script.src = 'https://accounts.google.com/gsi/client';
+    script.async = true;
+    script.defer = true;
+    document.body.appendChild(script);
+
+    script.onload = () => {
+      window.google?.accounts.id.initialize({
+        client_id: GOOGLE_CLIENT_ID,
+        callback: handleGoogleResponse
+      });
+      window.google?.accounts.id.renderButton(
+        document.getElementById('google-signup-btn'),
+        { theme: 'outline', size: 'large', width: '100%', text: 'signup_with' }
+      );
+    };
+
+    return () => {
+      const existingScript = document.querySelector('script[src="https://accounts.google.com/gsi/client"]');
+      if (existingScript) existingScript.remove();
+    };
   }, []);
+
+  const handleGoogleResponse = async (response) => {
+    try {
+      setLoading(true);
+      const res = await authAPI.googleLogin(response.credential);
+      localStorage.setItem('token', res.data.token);
+      setUserAndToken(res.data.user, res.data.token);
+      toast.success('Google signup successful!');
+      navigate('/dashboard');
+    } catch (error) {
+      toast.error(error.response?.data?.message || 'Google signup failed');
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const handleChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
@@ -236,22 +277,8 @@ const Signup = () => {
               </div>
             </div>
 
-            {/* Role */}
-            <div style={{ marginBottom: '20px' }}>
-              <label style={labelStyle}>Role</label>
-              <select
-                name="role"
-                value={formData.role}
-                onChange={handleChange}
-                style={{ ...inputStyle, cursor: 'pointer', background: 'white' }}
-                onFocus={(e) => { e.target.style.borderColor = '#667eea'; e.target.style.boxShadow = '0 0 0 3px rgba(102,126,234,0.1)'; }}
-                onBlur={(e) => { e.target.style.borderColor = '#e2e8f0'; e.target.style.boxShadow = 'none'; }}
-              >
-                <option value="employee">Employee</option>
-                <option value="hr">HR Officer</option>
-                <option value="admin">Admin</option>
-              </select>
-            </div>
+            {/* Role - Hidden, always employee */}
+            <input type="hidden" name="role" value="employee" />
 
             {/* Submit Button */}
             <button
@@ -275,6 +302,16 @@ const Signup = () => {
             >
               {loading ? 'Creating Account...' : 'Create Account'}
             </button>
+
+            {/* Divider */}
+            <div style={{ display: 'flex', alignItems: 'center', margin: '16px 0' }}>
+              <div style={{ flex: 1, height: '1px', background: '#e2e8f0' }}></div>
+              <span style={{ padding: '0 12px', color: '#94a3b8', fontSize: '13px' }}>or</span>
+              <div style={{ flex: 1, height: '1px', background: '#e2e8f0' }}></div>
+            </div>
+
+            {/* Google Sign Up Button */}
+            <div id="google-signup-btn" style={{ display: 'flex', justifyContent: 'center' }}></div>
           </form>
 
           <p style={{ textAlign: 'center', marginTop: '16px', color: '#64748b', fontSize: '14px' }}>

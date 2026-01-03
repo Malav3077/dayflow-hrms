@@ -22,13 +22,16 @@ api.interceptors.request.use((config) => {
 export const authAPI = {
   signup: (data) => api.post('/auth/signup', data),
   login: (data) => api.post('/auth/login', data),
+  googleLogin: (credential) => api.post('/auth/google', { credential }),
   getMe: () => api.get('/auth/me'),
+  changePassword: (data) => api.post('/auth/change-password', data),
 };
 
 // Employee APIs
 export const employeeAPI = {
   getAll: () => api.get('/employees'),
   getById: (id) => api.get(`/employees/${id}`),
+  create: (data) => api.post('/employees', data),
   update: (id, data) => api.put(`/employees/${id}`, data),
   delete: (id) => api.delete(`/employees/${id}`),
 };
@@ -45,9 +48,11 @@ export const attendanceAPI = {
 
 // Leave APIs
 export const leaveAPI = {
+  create: (data) => api.post('/leave/apply', data),
   apply: (data) => api.post('/leave/apply', data),
   getMy: () => api.get('/leave/my'),
   getAll: (params) => api.get('/leave/all', { params }),
+  updateStatus: (id, status) => api.put(`/leave/${id}`, { status }),
   update: (id, data) => api.put(`/leave/${id}`, data),
   delete: (id) => api.delete(`/leave/${id}`),
 };
