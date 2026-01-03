@@ -1,6 +1,6 @@
 import { NavLink } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { FiGrid, FiUsers, FiClock, FiCalendar, FiSettings } from 'react-icons/fi';
+import { FiGrid, FiUsers, FiClock, FiCalendar, FiDollarSign, FiSettings } from 'react-icons/fi';
 
 const Sidebar = ({ isOpen, closeSidebar }) => {
   const { user, isAdmin } = useAuth();
@@ -10,6 +10,7 @@ const Sidebar = ({ isOpen, closeSidebar }) => {
     { path: '/employees', icon: FiUsers, label: 'Employees', adminOnly: true },
     { path: '/attendance', icon: FiClock, label: 'Attendance' },
     { path: '/time-off', icon: FiCalendar, label: 'Time Off' },
+    { path: '/payroll', icon: FiDollarSign, label: 'Payroll' },
   ];
 
   const getLinkStyle = (isActive) => ({

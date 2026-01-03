@@ -11,6 +11,7 @@ const TimeOff = () => {
   const [loading, setLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
   const [activeTab, setActiveTab] = useState('my'); // 'my' or 'all'
+  const [actionModal, setActionModal] = useState({ show: false, leave: null, action: null });
 
   useEffect(() => {
     loadLeaves();
@@ -32,24 +33,19 @@ const TimeOff = () => {
     }
   };
 
-  const handleApprove = async (id) => {
+  const handleAction = async (id, action, comment) => {
     try {
-      await leaveAPI.updateStatus(id, 'approved');
-      toast.success('Leave approved');
+      await leaveAPI.updateStatus(id, action, comment);
+      toast.success(`Leave ${action}`);
+      setActionModal({ show: false, leave: null, action: null });
       loadLeaves();
     } catch (error) {
-      toast.error('Failed to approve leave');
+      toast.error(`Failed to ${action} leave`);
     }
   };
 
-  const handleReject = async (id) => {
-    try {
-      await leaveAPI.updateStatus(id, 'rejected');
-      toast.success('Leave rejected');
-      loadLeaves();
-    } catch (error) {
-      toast.error('Failed to reject leave');
-    }
+  const openActionModal = (leave, action) => {
+    setActionModal({ show: true, leave, action });
   };
 
   const cardStyle = {
@@ -107,9 +103,10 @@ const TimeOff = () => {
       </div>
 
       {/* Leave Types Legend */}
-      <div style={{ marginBottom: '16px', display: 'flex', gap: '16px', fontSize: '12px' }}>
+      <div style={{ marginBottom: '16px', display: 'flex', gap: '16px', fontSize: '12px', flexWrap: 'wrap' }}>
         <span><span style={{ color: '#22c55e' }}>●</span> Paid Time off</span>
         <span><span style={{ color: '#f59e0b' }}>●</span> Sick Leave</span>
+        <span><span style={{ color: '#3b82f6' }}>●</span> Casual Leave</span>
         <span><span style={{ color: '#ef4444' }}>●</span> Unpaid Leave</span>
       </div>
 
@@ -160,8 +157,8 @@ const TimeOff = () => {
                         fontSize: '11px',
                         fontWeight: '500',
                         textTransform: 'capitalize',
-                        background: leave.leaveType === 'paid' ? '#dcfce7' : leave.leaveType === 'sick' ? '#fef3c7' : '#fee2e2',
-                        color: leave.leaveType === 'paid' ? '#166534' : leave.leaveType === 'sick' ? '#b45309' : '#dc2626'
+                        background: leave.leaveType === 'paid' ? '#dcfce7' : leave.leaveType === 'sick' ? '#fef3c7' : leave.leaveType === 'casual' ? '#dbeafe' : '#fee2e2',
+                        color: leave.leaveType === 'paid' ? '#166534' : leave.leaveType === 'sick' ? '#b45309' : leave.leaveType === 'casual' ? '#1d4ed8' : '#dc2626'
                       }}>
                         {leave.leaveType} Leave
                       </span>
@@ -193,7 +190,7 @@ const TimeOff = () => {
                         {leave.status === 'pending' && (
                           <>
                             <button
-                              onClick={() => handleApprove(leave._id)}
+                              onClick={() => openActionModal(leave, 'approved')}
                               style={{
                                 background: '#dcfce7',
                                 border: 'none',
@@ -207,7 +204,7 @@ const TimeOff = () => {
                               <FiCheck size={14} />
                             </button>
                             <button
-                              onClick={() => handleReject(leave._id)}
+                              onClick={() => openActionModal(leave, 'rejected')}
                               style={{
                                 background: '#fee2e2',
                                 border: 'none',
@@ -236,6 +233,16 @@ const TimeOff = () => {
         <TimeOffModal
           onClose={() => setShowModal(false)}
           onSave={() => { setShowModal(false); loadLeaves(); }}
+        />
+      )}
+
+      {/* Approve/Reject Modal */}
+      {actionModal.show && (
+        <ActionModal
+          leave={actionModal.leave}
+          action={actionModal.action}
+          onClose={() => setActionModal({ show: false, leave: null, action: null })}
+          onConfirm={handleAction}
         />
       )}
     </div>
@@ -311,6 +318,7 @@ const TimeOffModal = ({ onClose, onSave }) => {
             >
               <option value="paid">Paid Time Off</option>
               <option value="sick">Sick Leave</option>
+              <option value="casual">Casual Leave</option>
               <option value="unpaid">Unpaid Leave</option>
             </select>
           </div>
@@ -348,12 +356,13 @@ const TimeOffModal = ({ onClose, onSave }) => {
           </div>
 
           <div style={{ marginBottom: '20px' }}>
-            <label style={{ display: 'block', fontSize: '12px', fontWeight: '500', marginBottom: '4px' }}>Reason</label>
+            <label style={{ display: 'block', fontSize: '12px', fontWeight: '500', marginBottom: '4px' }}>Reason *</label>
             <textarea
               value={formData.reason}
               onChange={(e) => setFormData({ ...formData, reason: e.target.value })}
               style={{ ...inputStyle, minHeight: '80px', resize: 'vertical' }}
               placeholder="Why do you need time off?"
+              required
             />
           </div>
 
@@ -387,6 +396,122 @@ const TimeOffModal = ({ onClose, onSave }) => {
               }}
             >
               {loading ? 'Submitting...' : 'Submit'}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  );
+};
+
+// Action Modal for Approve/Reject with Comment
+const ActionModal = ({ leave, action, onClose, onConfirm }) => {
+  const [comment, setComment] = useState('');
+  const [loading, setLoading] = useState(false);
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setLoading(true);
+    await onConfirm(leave._id, action, comment);
+    setLoading(false);
+  };
+
+  const isApprove = action === 'approved';
+
+  const inputStyle = {
+    width: '100%',
+    padding: '8px 12px',
+    fontSize: '13px',
+    border: '1px solid #d1d5db',
+    borderRadius: '6px',
+    outline: 'none',
+    boxSizing: 'border-box'
+  };
+
+  return (
+    <div style={{
+      position: 'fixed',
+      inset: 0,
+      background: 'rgba(0,0,0,0.5)',
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'center',
+      zIndex: 100
+    }}>
+      <div style={{
+        background: 'white',
+        borderRadius: '8px',
+        padding: '24px',
+        width: '100%',
+        maxWidth: '400px'
+      }}>
+        <h3 style={{
+          fontSize: '16px',
+          fontWeight: '600',
+          marginBottom: '16px',
+          color: isApprove ? '#166534' : '#dc2626'
+        }}>
+          {isApprove ? 'Approve' : 'Reject'} Leave Request
+        </h3>
+
+        <div style={{ marginBottom: '16px', fontSize: '13px', color: '#374151' }}>
+          <p style={{ margin: '0 0 8px 0' }}>
+            <strong>Employee:</strong> {leave.employee?.firstName} {leave.employee?.lastName}
+          </p>
+          <p style={{ margin: '0 0 8px 0' }}>
+            <strong>Type:</strong> {leave.leaveType} Leave
+          </p>
+          <p style={{ margin: '0 0 8px 0' }}>
+            <strong>Duration:</strong> {new Date(leave.startDate).toLocaleDateString()} - {new Date(leave.endDate).toLocaleDateString()} ({leave.totalDays} days)
+          </p>
+          <p style={{ margin: 0 }}>
+            <strong>Reason:</strong> {leave.reason || 'Not provided'}
+          </p>
+        </div>
+
+        <form onSubmit={handleSubmit}>
+          <div style={{ marginBottom: '16px' }}>
+            <label style={{ display: 'block', fontSize: '12px', fontWeight: '500', marginBottom: '4px' }}>
+              Admin Comment (Optional)
+            </label>
+            <textarea
+              value={comment}
+              onChange={(e) => setComment(e.target.value)}
+              style={{ ...inputStyle, minHeight: '80px', resize: 'vertical' }}
+              placeholder={isApprove ? 'Any notes for the employee...' : 'Reason for rejection...'}
+            />
+          </div>
+
+          <div style={{ display: 'flex', gap: '12px', justifyContent: 'flex-end' }}>
+            <button
+              type="button"
+              onClick={onClose}
+              style={{
+                padding: '8px 16px',
+                background: 'white',
+                border: '1px solid #d1d5db',
+                borderRadius: '6px',
+                fontSize: '13px',
+                cursor: 'pointer'
+              }}
+            >
+              Cancel
+            </button>
+            <button
+              type="submit"
+              disabled={loading}
+              style={{
+                padding: '8px 16px',
+                background: isApprove ? '#166534' : '#dc2626',
+                color: 'white',
+                border: 'none',
+                borderRadius: '6px',
+                fontSize: '13px',
+                cursor: loading ? 'not-allowed' : 'pointer',
+                opacity: loading ? 0.7 : 1
+              }}
+            >
+              {loading ? 'Processing...' : (isApprove ? 'Approve' : 'Reject')}
             </button>
           </div>
         </form>

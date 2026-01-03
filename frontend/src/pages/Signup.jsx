@@ -17,6 +17,8 @@ const Signup = () => {
     role: 'employee',
   });
   const [loading, setLoading] = useState(false);
+  const [verificationSent, setVerificationSent] = useState(false);
+  const [verificationEmail, setVerificationEmail] = useState('');
   const { signup, setUserAndToken } = useAuth();
   const navigate = useNavigate();
 
@@ -82,7 +84,7 @@ const Signup = () => {
     }
     setLoading(true);
     try {
-      await signup({
+      const response = await authAPI.signup({
         employeeId: formData.employeeId,
         firstName: formData.firstName,
         lastName: formData.lastName,
@@ -90,8 +92,15 @@ const Signup = () => {
         password: formData.password,
         role: formData.role
       });
-      toast.success('Account created successfully!');
-      navigate('/dashboard');
+
+      if (response.data.requiresVerification) {
+        setVerificationSent(true);
+        setVerificationEmail(response.data.email);
+        toast.success('Account created! Please verify your email.');
+      } else {
+        toast.success('Account created successfully!');
+        navigate('/login');
+      }
     } catch (error) {
       toast.error(error.response?.data?.message || 'Signup failed');
     } finally {
@@ -185,17 +194,70 @@ const Signup = () => {
             }}>Sign Up</button>
           </div>
 
-          <form onSubmit={handleSubmit}>
-            {/* Employee ID */}
-            <div style={{ marginBottom: '14px' }}>
-              <label style={labelStyle}>Employee ID</label>
-              <input
-                type="text"
-                value={formData.employeeId}
-                readOnly
-                style={{ ...inputStyle, background: '#f8fafc', color: '#94a3b8', cursor: 'not-allowed' }}
-              />
+          {verificationSent ? (
+            /* Verification Sent View */
+            <div style={{ textAlign: 'center', padding: '20px 0' }}>
+              <div style={{
+                width: '80px',
+                height: '80px',
+                background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)',
+                borderRadius: '50%',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                margin: '0 auto 24px',
+                fontSize: '36px',
+                color: 'white'
+              }}>
+                &#9993;
+              </div>
+              <h3 style={{ margin: '0 0 12px', color: '#1e293b', fontSize: '20px', fontWeight: '600' }}>
+                Check Your Email!
+              </h3>
+              <p style={{ color: '#64748b', fontSize: '14px', margin: '0 0 8px', lineHeight: '1.5' }}>
+                We've sent a verification link to:
+              </p>
+              <p style={{ color: '#667eea', fontSize: '15px', fontWeight: '600', margin: '0 0 24px' }}>
+                {verificationEmail}
+              </p>
+              <p style={{ color: '#64748b', fontSize: '13px', margin: '0 0 24px', lineHeight: '1.5' }}>
+                Click the link in the email to verify your account and complete registration.
+              </p>
+              <Link
+                to="/login"
+                style={{
+                  display: 'inline-block',
+                  width: '100%',
+                  padding: '14px',
+                  fontSize: '15px',
+                  fontWeight: '600',
+                  color: 'white',
+                  background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                  border: 'none',
+                  borderRadius: '12px',
+                  textDecoration: 'none',
+                  boxSizing: 'border-box',
+                  textAlign: 'center'
+                }}
+              >
+                Go to Login
+              </Link>
+              <p style={{ marginTop: '16px', color: '#94a3b8', fontSize: '12px' }}>
+                Didn't receive the email? Check your spam folder or try logging in to resend.
+              </p>
             </div>
+          ) : (
+            <form onSubmit={handleSubmit}>
+              {/* Employee ID */}
+              <div style={{ marginBottom: '14px' }}>
+                <label style={labelStyle}>Employee ID</label>
+                <input
+                  type="text"
+                  value={formData.employeeId}
+                  readOnly
+                  style={{ ...inputStyle, background: '#f8fafc', color: '#94a3b8', cursor: 'not-allowed' }}
+                />
+              </div>
 
             {/* Name Row */}
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', marginBottom: '14px' }}>
@@ -277,7 +339,7 @@ const Signup = () => {
               </div>
             </div>
 
-            {/* Role - Hidden, always employee */}
+            {/* Role is always employee for self-signup */}
             <input type="hidden" name="role" value="employee" />
 
             {/* Submit Button */}
@@ -311,15 +373,18 @@ const Signup = () => {
             </div>
 
             {/* Google Sign Up Button */}
-            <div id="google-signup-btn" style={{ display: 'flex', justifyContent: 'center' }}></div>
-          </form>
+              <div id="google-signup-btn" style={{ display: 'flex', justifyContent: 'center' }}></div>
+            </form>
+          )}
 
-          <p style={{ textAlign: 'center', marginTop: '16px', color: '#64748b', fontSize: '14px' }}>
-            Already have an account?{' '}
-            <Link to="/login" style={{ color: '#667eea', fontWeight: '600', textDecoration: 'none' }}>
-              Sign In
-            </Link>
-          </p>
+          {!verificationSent && (
+            <p style={{ textAlign: 'center', marginTop: '16px', color: '#64748b', fontSize: '14px' }}>
+              Already have an account?{' '}
+              <Link to="/login" style={{ color: '#667eea', fontWeight: '600', textDecoration: 'none' }}>
+                Sign In
+              </Link>
+            </p>
+          )}
         </div>
       </div>
     </div>

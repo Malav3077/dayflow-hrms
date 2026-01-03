@@ -25,6 +25,8 @@ export const authAPI = {
   googleLogin: (credential) => api.post('/auth/google', { credential }),
   getMe: () => api.get('/auth/me'),
   changePassword: (data) => api.post('/auth/change-password', data),
+  verifyEmail: (token) => api.post('/auth/verify-email', { token }),
+  resendVerification: (email) => api.post('/auth/resend-verification', { email }),
 };
 
 // Employee APIs
@@ -52,7 +54,7 @@ export const leaveAPI = {
   apply: (data) => api.post('/leave/apply', data),
   getMy: () => api.get('/leave/my'),
   getAll: (params) => api.get('/leave/all', { params }),
-  updateStatus: (id, status) => api.put(`/leave/${id}`, { status }),
+  updateStatus: (id, status, adminComment) => api.put(`/leave/${id}`, { status, adminComment }),
   update: (id, data) => api.put(`/leave/${id}`, data),
   delete: (id) => api.delete(`/leave/${id}`),
 };

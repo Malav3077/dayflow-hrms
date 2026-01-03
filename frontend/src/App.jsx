@@ -8,11 +8,13 @@ import Layout from './components/Layout';
 // Pages
 import Login from './pages/Login';
 import Signup from './pages/Signup';
+import VerifyEmail from './pages/VerifyEmail';
 import Dashboard from './pages/Dashboard';
 import Profile from './pages/Profile';
 import Attendance from './pages/Attendance';
 import TimeOff from './pages/TimeOff';
 import Employees from './pages/Employees';
+import Payroll from './pages/Payroll';
 import Settings from './pages/Settings';
 
 function App() {
@@ -23,6 +25,7 @@ function App() {
           {/* Public Routes */}
           <Route path="/login" element={<Login />} />
           <Route path="/signup" element={<Signup />} />
+          <Route path="/verify-email" element={<VerifyEmail />} />
 
           {/* Protected Routes */}
           <Route path="/" element={<Layout />}>
@@ -32,6 +35,7 @@ function App() {
             <Route path="employees" element={<Employees />} />
             <Route path="attendance" element={<Attendance />} />
             <Route path="time-off" element={<TimeOff />} />
+            <Route path="payroll" element={<Payroll />} />
             <Route path="settings" element={<Settings />} />
           </Route>
 

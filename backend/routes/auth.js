@@ -3,14 +3,15 @@ const jwt = require('jsonwebtoken');
 const { OAuth2Client } = require('google-auth-library');
 const User = require('../models/User');
 const { auth } = require('../middleware/auth');
+const { sendVerificationEmail, generateVerificationToken } = require('../utils/emailService');
 
 const router = express.Router();
 const googleClient = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
 
-// Sign Up
+// Sign Up (Self-signup is always Employee role)
 router.post('/signup', async (req, res) => {
   try {
-    const { employeeId, email, password, role, firstName, lastName } = req.body;
+    const { employeeId, email, password, firstName, lastName } = req.body;
 
     // Check if user exists
     const existingUser = await User.findOne({ $or: [{ email }, { employeeId }] });
@@ -18,32 +19,31 @@ router.post('/signup', async (req, res) => {
       return res.status(400).json({ message: 'User already exists' });
     }
 
-    // Create new user
+    // Generate verification token
+    const verificationToken = generateVerificationToken();
+
+    // Create new user - force role to employee for self-signup (security)
     const user = new User({
       employeeId,
       email,
       password,
-      role: role || 'employee',
+      role: 'employee', // Always employee for self-signup
       firstName,
-      lastName
+      lastName,
+      isEmailVerified: false,
+      emailVerificationToken: verificationToken,
+      emailVerificationExpires: new Date(Date.now() + 24 * 60 * 60 * 1000) // 24 hours
     });
 
     await user.save();
 
-    // Generate token
-    const token = jwt.sign({ userId: user._id }, process.env.JWT_SECRET, { expiresIn: '7d' });
+    // Send verification email
+    const emailResult = await sendVerificationEmail(email, firstName, verificationToken);
 
     res.status(201).json({
-      message: 'User created successfully',
-      token,
-      user: {
-        id: user._id,
-        employeeId: user.employeeId,
-        email: user.email,
-        role: user.role,
-        firstName: user.firstName,
-        lastName: user.lastName
-      }
+      message: 'Account created! Please check your email to verify your account.',
+      requiresVerification: true,
+      email: user.email
     });
   } catch (error) {
     console.error('Signup error:', error);
@@ -68,6 +68,15 @@ router.post('/login', async (req, res) => {
       return res.status(400).json({ message: 'Invalid credentials' });
     }
 
+    // Check if email is verified (skip for Google users and admin/hr created by seed)
+    if (!user.isEmailVerified && user.authProvider === 'local' && user.role === 'employee') {
+      return res.status(403).json({
+        message: 'Please verify your email before logging in',
+        requiresVerification: true,
+        email: user.email
+      });
+    }
+
     // Generate token
     const token = jwt.sign({ userId: user._id }, process.env.JWT_SECRET, { expiresIn: '7d' });
 
@@ -80,7 +89,8 @@ router.post('/login', async (req, res) => {
         email: user.email,
         role: user.role,
         firstName: user.firstName,
-        lastName: user.lastName
+        lastName: user.lastName,
+        authProvider: user.authProvider
       }
     });
   } catch (error) {
@@ -130,6 +140,73 @@ router.post('/change-password', auth, async (req, res) => {
     res.json({ message: 'Password changed successfully' });
   } catch (error) {
     console.error('Change password error:', error);
+    res.status(500).json({ message: 'Server error', error: error.message });
+  }
+});
+
+// Verify Email
+router.post('/verify-email', async (req, res) => {
+  try {
+    const { token } = req.body;
+
+    if (!token) {
+      return res.status(400).json({ message: 'Verification token is required' });
+    }
+
+    // Find user with matching token that hasn't expired
+    const user = await User.findOne({
+      emailVerificationToken: token,
+      emailVerificationExpires: { $gt: Date.now() }
+    });
+
+    if (!user) {
+      return res.status(400).json({ message: 'Invalid or expired verification token' });
+    }
+
+    // Mark email as verified and clear token
+    user.isEmailVerified = true;
+    user.emailVerificationToken = undefined;
+    user.emailVerificationExpires = undefined;
+    await user.save();
+
+    res.json({ message: 'Email verified successfully! You can now log in.' });
+  } catch (error) {
+    console.error('Verify email error:', error);
+    res.status(500).json({ message: 'Server error', error: error.message });
+  }
+});
+
+// Resend Verification Email
+router.post('/resend-verification', async (req, res) => {
+  try {
+    const { email } = req.body;
+
+    if (!email) {
+      return res.status(400).json({ message: 'Email is required' });
+    }
+
+    const user = await User.findOne({ email });
+
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    if (user.isEmailVerified) {
+      return res.status(400).json({ message: 'Email is already verified' });
+    }
+
+    // Generate new token
+    const verificationToken = generateVerificationToken();
+    user.emailVerificationToken = verificationToken;
+    user.emailVerificationExpires = new Date(Date.now() + 24 * 60 * 60 * 1000);
+    await user.save();
+
+    // Send verification email
+    await sendVerificationEmail(email, user.firstName, verificationToken);
+
+    res.json({ message: 'Verification email sent! Please check your inbox.' });
+  } catch (error) {
+    console.error('Resend verification error:', error);
     res.status(500).json({ message: 'Server error', error: error.message });
   }
 });

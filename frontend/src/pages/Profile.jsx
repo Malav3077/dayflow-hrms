@@ -1,8 +1,8 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { employeeAPI } from '../services/api';
 import { toast } from 'react-toastify';
-import { FiUser, FiMail, FiPhone, FiMapPin, FiBriefcase, FiCalendar, FiDollarSign } from 'react-icons/fi';
+import { FiUser, FiMail, FiPhone, FiMapPin, FiBriefcase, FiCalendar, FiDollarSign, FiCamera } from 'react-icons/fi';
 
 const Profile = () => {
   const { user, loadUser, isAdmin } = useAuth();
@@ -20,6 +20,8 @@ const Profile = () => {
     deductions: 0
   });
   const [loading, setLoading] = useState(true);
+  const [uploadingPhoto, setUploadingPhoto] = useState(false);
+  const fileInputRef = useRef(null);
 
   useEffect(() => {
     loadProfile();
@@ -52,6 +54,45 @@ const Profile = () => {
       loadUser();
     } catch (error) {
       toast.error(error.response?.data?.message || 'Update failed');
+    }
+  };
+
+  const handlePhotoUpload = async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    // Validate file type
+    if (!file.type.startsWith('image/')) {
+      toast.error('Please select an image file');
+      return;
+    }
+
+    // Validate file size (max 2MB)
+    if (file.size > 2 * 1024 * 1024) {
+      toast.error('Image size should be less than 2MB');
+      return;
+    }
+
+    setUploadingPhoto(true);
+    try {
+      // Convert to base64
+      const reader = new FileReader();
+      reader.onloadend = async () => {
+        try {
+          await employeeAPI.update(user?.id || user?._id, { profilePicture: reader.result });
+          toast.success('Profile photo updated!');
+          loadProfile();
+          loadUser();
+        } catch (error) {
+          toast.error('Failed to upload photo');
+        } finally {
+          setUploadingPhoto(false);
+        }
+      };
+      reader.readAsDataURL(file);
+    } catch (error) {
+      toast.error('Failed to process image');
+      setUploadingPhoto(false);
     }
   };
 
@@ -111,18 +152,62 @@ const Profile = () => {
         <div style={{ display: 'grid', gridTemplateColumns: '250px 1fr', gap: '20px' }}>
           {/* Profile Card */}
           <div style={{ ...cardStyle, textAlign: 'center' }}>
-            <div style={{
-              width: '80px',
-              height: '80px',
-              background: '#fee2e2',
-              borderRadius: '50%',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              margin: '0 auto 12px'
-            }}>
-              <FiUser style={{ color: '#dc2626' }} size={32} />
+            {/* Profile Photo */}
+            <div style={{ position: 'relative', display: 'inline-block', marginBottom: '12px' }}>
+              <div style={{
+                width: '100px',
+                height: '100px',
+                borderRadius: '50%',
+                overflow: 'hidden',
+                background: '#fee2e2',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                border: '3px solid #e5e7eb'
+              }}>
+                {profile?.profilePicture ? (
+                  <img
+                    src={profile.profilePicture}
+                    alt="Profile"
+                    style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                  />
+                ) : (
+                  <FiUser style={{ color: '#dc2626' }} size={40} />
+                )}
+              </div>
+              {/* Upload Button */}
+              <button
+                onClick={() => fileInputRef.current?.click()}
+                disabled={uploadingPhoto}
+                style={{
+                  position: 'absolute',
+                  bottom: '0',
+                  right: '0',
+                  width: '32px',
+                  height: '32px',
+                  borderRadius: '50%',
+                  background: '#7c3aed',
+                  border: '2px solid white',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  cursor: uploadingPhoto ? 'not-allowed' : 'pointer',
+                  opacity: uploadingPhoto ? 0.7 : 1
+                }}
+              >
+                <FiCamera size={14} style={{ color: 'white' }} />
+              </button>
+              <input
+                type="file"
+                ref={fileInputRef}
+                onChange={handlePhotoUpload}
+                accept="image/*"
+                style={{ display: 'none' }}
+              />
             </div>
+            {uploadingPhoto && (
+              <p style={{ fontSize: '11px', color: '#7c3aed', marginBottom: '8px' }}>Uploading...</p>
+            )}
             <h3 style={{ fontSize: '16px', fontWeight: '600', color: '#111827' }}>
               {profile?.firstName} {profile?.lastName}
             </h3>
