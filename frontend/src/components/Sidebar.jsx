@@ -17,10 +17,10 @@ const Sidebar = ({ isOpen, closeSidebar }) => {
     display: 'flex',
     alignItems: 'center',
     gap: '12px',
-    padding: '10px 16px',
-    borderRadius: '6px',
+    padding: '12px 16px',
+    borderRadius: '8px',
     textDecoration: 'none',
-    fontSize: '14px',
+    fontSize: '15px',
     fontWeight: '500',
     background: isActive ? '#f3e8ff' : 'transparent',
     color: isActive ? '#7c3aed' : '#4b5563',
@@ -76,7 +76,7 @@ const Sidebar = ({ isOpen, closeSidebar }) => {
                   style={({ isActive }) => getLinkStyle(isActive)}
                   onClick={closeSidebar}
                 >
-                  <item.icon size={18} />
+                  <item.icon size={20} />
                   <span>{item.label}</span>
                 </NavLink>
               );
@@ -91,7 +91,7 @@ const Sidebar = ({ isOpen, closeSidebar }) => {
             style={({ isActive }) => getLinkStyle(isActive)}
             onClick={closeSidebar}
           >
-            <FiSettings size={18} />
+            <FiSettings size={20} />
             <span>Settings</span>
           </NavLink>
         </div>

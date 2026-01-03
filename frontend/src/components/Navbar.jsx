@@ -59,24 +59,24 @@ const Navbar = ({ toggleSidebar }) => {
           {/* Top Navigation Tabs */}
           <div style={{ display: 'flex', gap: '8px' }} className="hide-mobile">
             <Link to="/dashboard" style={{
-              padding: '6px 16px',
+              padding: '8px 18px',
               background: '#f3e8ff',
               border: '1px solid #c084fc',
               borderRadius: '6px',
               textDecoration: 'none',
               color: '#7c3aed',
-              fontSize: '13px',
+              fontSize: '14px',
               fontWeight: '500'
             }}>Dashboard</Link>
             {['Employees', 'Attendance', 'Time Off'].map(tab => (
               <Link key={tab} to={`/${tab.toLowerCase().replace(' ', '-')}`} style={{
-                padding: '6px 16px',
+                padding: '8px 18px',
                 background: '#fff',
                 border: '1px solid #e5e7eb',
                 borderRadius: '6px',
                 textDecoration: 'none',
                 color: '#4b5563',
-                fontSize: '13px'
+                fontSize: '14px'
               }}>{tab}</Link>
             ))}
           </div>
@@ -125,10 +125,10 @@ const Navbar = ({ toggleSidebar }) => {
               zIndex: 100
             }}>
               <div style={{ padding: '12px 16px', borderBottom: '1px solid #e5e7eb' }}>
-                <p style={{ fontWeight: '600', color: '#111827', margin: 0, fontSize: '14px' }}>
+                <p style={{ fontWeight: '600', color: '#111827', margin: 0, fontSize: '15px' }}>
                   {user?.firstName} {user?.lastName}
                 </p>
-                <p style={{ fontSize: '12px', color: '#6b7280', margin: '2px 0 0 0', textTransform: 'capitalize' }}>
+                <p style={{ fontSize: '13px', color: '#6b7280', margin: '4px 0 0 0', textTransform: 'capitalize' }}>
                   {user?.role}
                 </p>
               </div>
@@ -139,15 +139,15 @@ const Navbar = ({ toggleSidebar }) => {
                   style={{
                     display: 'flex',
                     alignItems: 'center',
-                    gap: '8px',
-                    padding: '8px 12px',
+                    gap: '10px',
+                    padding: '10px 12px',
                     borderRadius: '6px',
                     textDecoration: 'none',
                     color: '#374151',
-                    fontSize: '14px'
+                    fontSize: '15px'
                   }}
                 >
-                  <FiUser size={16} />
+                  <FiUser size={18} />
                   My Profile
                 </Link>
                 <button
@@ -155,19 +155,19 @@ const Navbar = ({ toggleSidebar }) => {
                   style={{
                     display: 'flex',
                     alignItems: 'center',
-                    gap: '8px',
-                    padding: '8px 12px',
+                    gap: '10px',
+                    padding: '10px 12px',
                     borderRadius: '6px',
                     background: 'transparent',
                     border: 'none',
                     cursor: 'pointer',
                     color: '#dc2626',
-                    fontSize: '14px',
+                    fontSize: '15px',
                     width: '100%',
                     textAlign: 'left'
                   }}
                 >
-                  <FiLogOut size={16} />
+                  <FiLogOut size={18} />
                   Log Out
                 </button>
               </div>
